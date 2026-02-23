@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: price-monitor-bot
+    env: node
+    plan: free
+    autoDeploy: true
+    buildCommand: npm ci
+    startCommand: npx tsx src/bot-webhook.ts
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: GITHUB_REPOSITORY
+        value: Marve10s/Comics-Tracker
+      - key: GITHUB_REF_NAME
+        value: main
+      - key: TELEGRAM_WEBHOOK_PATH
+        value: /telegram/webhook
+      - key: TELEGRAM_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        sync: false
+      - key: BOT_PUBLIC_URL
+        sync: false

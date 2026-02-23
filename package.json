@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "bot:webhook": "tsx src/bot-webhook.ts",
+    "bot:webhook:set": "tsx src/set-telegram-webhook.ts",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint src/",
     "test:run": "tsx src/monitor.ts"
