@@ -2,7 +2,7 @@ name: Monitor — InStockTrades (every 30 min)
 
 on:
   schedule:
-    - cron: "7,37 * * * *"
+    - cron: "8,38 * * * *"
   workflow_dispatch:
 
 permissions:

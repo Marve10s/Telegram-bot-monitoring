@@ -2,7 +2,7 @@ name: Monitor — eBay (every hour)
 
 on:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "18 * * * *"
   workflow_dispatch:
 
 permissions:
