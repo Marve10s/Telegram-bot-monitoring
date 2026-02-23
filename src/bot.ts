@@ -1,10 +1,9 @@
-import { execFileSync } from "child_process"
 import { existsSync, readFileSync, writeFileSync } from "fs"
 import { join } from "path"
 
 const STATE_PATH = join(process.cwd(), "state.json")
 const BOT_UPDATE_KEY = "__bot_last_update_id__"
-const MONITOR_CONFIGS = ["monitors-instocktrades.json", "monitors-ebay.json"]
+const MONITOR_WORKFLOWS = ["monitor-instocktrades.yml", "monitor-ebay.yml"]
 
 type StateMap = Record<string, string>
 
@@ -32,6 +31,35 @@ async function sendMessage(token: string, chatId: string, text: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
   })
+}
+
+async function dispatchWorkflow(workflowFile: string) {
+  const ghToken = process.env.GITHUB_TOKEN ?? ""
+  const repo = process.env.GITHUB_REPOSITORY ?? ""
+  const ref = process.env.GITHUB_REF_NAME ?? "main"
+
+  if (!ghToken || !repo) {
+    throw new Error("GitHub dispatch credentials not available")
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${repo}/actions/workflows/${workflowFile}/dispatches`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${ghToken}`,
+        Accept: "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "User-Agent": "price-monitor-bot",
+      },
+      body: JSON.stringify({ ref }),
+    },
+  )
+
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Dispatch failed for ${workflowFile}: ${res.status} ${body}`)
+  }
 }
 
 async function main() {
@@ -65,14 +93,16 @@ async function main() {
     if (text === "/test") {
       await sendMessage(token, chatId, "✅ Bot is alive and running.")
     } else if (text === "/trigger") {
-      await sendMessage(token, chatId, "⚡ Running monitors...")
-      for (const config of MONITOR_CONFIGS) {
-        execFileSync("npx", ["tsx", "src/monitor.ts", config], {
-          stdio: "inherit",
-          env: process.env,
-        })
+      await sendMessage(token, chatId, "⚡ Triggering monitor workflows...")
+      try {
+        for (const workflowFile of MONITOR_WORKFLOWS) {
+          await dispatchWorkflow(workflowFile)
+        }
+        await sendMessage(token, chatId, "✅ Monitor workflows dispatched.")
+      } catch (error) {
+        console.error(error)
+        await sendMessage(token, chatId, "❌ Failed to trigger monitor workflows.")
       }
-      await sendMessage(token, chatId, "✅ Done.")
     }
   }
 
