@@ -2,7 +2,7 @@ name: Bot — Command listener (every 5 min)
 
 on:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "2-59/5 * * * *"
   workflow_dispatch:
 
 permissions:
