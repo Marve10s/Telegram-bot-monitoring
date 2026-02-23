@@ -12,22 +12,39 @@ jobs:
   monitor:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check active window (Europe/Kyiv)
+        id: active_window
+        run: |
+          HOUR="$(TZ=Europe/Kyiv date +%H)"
+          if [ "$HOUR" -ge 9 ] || [ "$HOUR" -eq 0 ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Kyiv hour=$HOUR (active)"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Kyiv hour=$HOUR (quiet hours, skipping)"
+          fi
 
-      - uses: actions/setup-node@v4
+      - if: steps.active_window.outputs.run == 'true'
+        uses: actions/checkout@v4
+
+      - if: steps.active_window.outputs.run == 'true'
+        uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
 
-      - run: npm ci
+      - if: steps.active_window.outputs.run == 'true'
+        run: npm ci
 
       - name: Run eBay monitors
+        if: steps.active_window.outputs.run == 'true'
         run: npx tsx src/monitor.ts monitors-ebay.json
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
       - name: Commit state changes
+        if: steps.active_window.outputs.run == 'true'
         run: |
           git config user.name "price-monitor[bot]"
           git config user.email "price-monitor[bot]@users.noreply.github.com"
